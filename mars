@@ -1,0 +1,61 @@
+#include <stdio.h>
+#include <curl/curl.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
+
+struct Date {
+    int day;
+    int month;
+    int year;
+};
+
+int main() 
+{
+    FILE *file_ptr;
+    char file_name[100];
+    char line[100];
+
+    printf("Enter the name of the notepad file to read: ");
+    scanf("%s", file_name);
+
+    file_ptr = fopen(file_name, "r");
+    if (file_ptr == NULL) {
+        printf("Failed to open the file %s.\n", file_name);
+        return 1;
+    }
+
+    printf("File contents:\n");
+
+    while (fgets(line, sizeof(line), file_ptr) != NULL) {
+        printf("%s", line);
+    }
+
+    fclose(file_ptr);
+
+    CURL *curl;
+    CURLcode res;
+
+    // Get the current date and format it as a string
+    time_t t = time(NULL);
+    struct tm *tm = localtime(&t);
+    char date[11];
+    strftime(date, sizeof(date), "%Y-%m-%d", tm);
+
+    // Set up the API request
+    char url[200];
+    sprintf(url, "https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/photos?earth_date=%s&api_key=DEMO_KEY", date);
+
+    // Send the API request
+    curl = curl_easy_init();
+    if (curl) {
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        res = curl_easy_perform(curl);
+        if (res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        }
+        curl_easy_cleanup(curl);
+    }
+
+    return 0;
+}
